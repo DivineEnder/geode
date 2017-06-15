@@ -281,6 +281,8 @@ public class ContainerManager {
 
     install.modifyConfiguration(configuration);
 
+    configuration.setProperty(GeneralPropertySet.JVMARGS, "-Djava.security.egd=file:/dev/./urandom");
+
     // configuration.setProperty(GeneralPropertySet.JVMARGS,
     // "-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=" + (7700 + index));
 
