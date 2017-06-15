@@ -22,8 +22,19 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 
+/**
+ * Container install for a generic app server
+ *
+ * Extends {@link ContainerInstall} to form a basic installer which downloads and sets up a
+ * container installation. Currently being used solely for Jetty 9 installation.
+ */
 public class GenericAppServerInstall extends ContainerInstall {
 
+  /**
+   * Get the download URL of a generic app server using hardcoded keywords
+   *
+   * Currently the only supported keyword instance is JETTY9
+   */
   public enum Server {
     JETTY9(
         "http://central.maven.org/maven2/org/eclipse/jetty/jetty-distribution/9.4.5.v20170502/jetty-distribution-9.4.5.v20170502.zip");
@@ -39,6 +50,12 @@ public class GenericAppServerInstall extends ContainerInstall {
     }
   }
 
+  /**
+   * Represent the type of cache being used in this install
+   *
+   * Supports PEER_TO_PEER or CLIENT_SERVER. Also contains several useful helper functions
+   * containing hardcoded values needed for the two different types of caches.
+   */
   public enum CacheType {
     PEER_TO_PEER("peer-to-peer", "cache-peer.xml"),
     CLIENT_SERVER("client-server", "cache-client.xml");
@@ -80,6 +97,12 @@ public class GenericAppServerInstall extends ContainerInstall {
     this(server, cacheType, DEFAULT_INSTALL_DIR);
   }
 
+  /**
+   * Download and setup container installation
+   *
+   * Finds the path to (and extracts) the appserver module located within GEODE_BUILD_HOME
+   * directory. If cache is Client Server then also builds WAR file.
+   */
   public GenericAppServerInstall(Server server, CacheType cacheType, String installDir)
       throws IOException, InterruptedException {
     super(installDir, server.getDownloadURL());
@@ -96,6 +119,9 @@ public class GenericAppServerInstall extends ContainerInstall {
     }
   }
 
+  /**
+   * Build the command list used to modify/build the WAR file
+   */
   private List<String> buildCommand() throws IOException {
     String unmodifiedWar = findSessionTestingWar();
     String modifyWarScript = appServerModulePath + "/bin/modify_war";
@@ -121,6 +147,10 @@ public class GenericAppServerInstall extends ContainerInstall {
     return command;
   }
 
+  /**
+   * Modifies the WAR file for container use, by simulating a command line execution of the
+   * modify_war_file script using the commands built from {@link #buildCommand()}
+   */
   private void modifyWarFile() throws IOException, InterruptedException {
     warFile = File.createTempFile("session-testing", ".war", new File("/tmp"));
     warFile.deleteOnExit();
@@ -140,16 +170,28 @@ public class GenericAppServerInstall extends ContainerInstall {
     }
   }
 
+  /**
+   * @see ContainerInstall#getContainerId()
+   */
   @Override
   public String getContainerId() {
-    return "jetty9x";
+    return server.name().toLowerCase() + "x";
   }
 
+  /**
+   * @see ContainerInstall#getContainerDescription()
+   */
   @Override
   public String getContainerDescription() {
     return server.name() + "_" + cacheType.name();
   }
 
+  /**
+   * Sets the locator for this container
+   *
+   * If the cache is P2P the WAR file must be regenerated to take a new locator. Otherwise (if
+   * Client Server) the cache xml file will be edited.
+   */
   @Override
   public void setLocator(String address, int port) throws Exception {
     if (cacheType == CacheType.PEER_TO_PEER) {
@@ -165,6 +207,9 @@ public class GenericAppServerInstall extends ContainerInstall {
     }
   }
 
+  /**
+   * @see ContainerInstall#getDeployableWAR()
+   */
   @Override
   public WAR getDeployableWAR() {
     return new WAR(warFile.getAbsolutePath());

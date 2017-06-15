@@ -17,6 +17,12 @@ package org.apache.geode.session.tests;
 import org.apache.geode.test.dunit.DUnitEnv;
 import org.junit.BeforeClass;
 
+/**
+ * Tomcat 7 Client Server tests
+ *
+ * Runs all the tests in {@link CargoTestBase} on the Tomcat 7 install, setup in the
+ * {@link #setupTomcatInstall()} method before tests are run.
+ */
 public class Tomcat7ClientServerTest extends TomcatClientServerTest {
   private static ContainerInstall install;
 

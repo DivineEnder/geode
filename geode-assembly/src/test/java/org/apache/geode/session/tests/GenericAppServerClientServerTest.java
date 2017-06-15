@@ -20,7 +20,15 @@ import org.apache.geode.test.dunit.Host;
 import org.apache.geode.test.dunit.VM;
 import org.junit.Before;
 
+/**
+ * Extends the {@link CargoTestBase} class to support client server tests of generic app servers
+ *
+ * Currently being used to test Jetty 9 containers in client server mode.
+ */
 public abstract class GenericAppServerClientServerTest extends CargoTestBase {
+  /**
+   * Starts the server for the client containers to connect to while testing.
+   */
   @Before
   public void startServers() throws InterruptedException {
     Host host = Host.getHost(0);

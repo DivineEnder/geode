@@ -19,6 +19,7 @@ import static org.junit.Assert.assertEquals;
 import org.apache.geode.test.dunit.cache.internal.JUnit4CacheTestCase;
 import org.apache.geode.test.junit.categories.DistributedTest;
 import org.junit.After;
+import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
@@ -29,15 +30,14 @@ import java.net.URISyntaxException;
 /**
  * Base class for test of session replication.
  *
- * This class contains all of the tests of session replication functionality.
- * Subclasses of this class configure different containers in order to run these
- * tests against specific containers.
+ * This class contains all of the tests of session replication functionality. Subclasses of this
+ * class configure different containers in order to run these tests against specific containers.
  */
 @Category(DistributedTest.class)
 public abstract class CargoTestBase extends JUnit4CacheTestCase {
 
   public transient Client client;
-  public transient ContainerManager manager;
+  public static transient ContainerManager manager;
 
   public abstract ContainerInstall getInstall();
 
@@ -55,11 +55,20 @@ public abstract class CargoTestBase extends JUnit4CacheTestCase {
   }
 
   /**
-   * Test that when multiple containers are using session replication,
-   * all of the containers will use the same session cookie for the same client.
+   * Clean up container installations after class tests are done
+   */
+  @AfterClass
+  public static void clean() throws IOException {
+    manager.cleanUp();
+  }
+
+  /**
+   * Test that when multiple containers are using session replication, all of the containers will
+   * use the same session cookie for the same client.
    */
   @Test
   public void containersShouldReplicateCookies() throws IOException, URISyntaxException {
+    manager.setTestName("containersShouldReplicateCookies");
     manager.startAllInactiveContainers();
 
     client.setPort(Integer.parseInt(manager.getContainerPort(0)));
@@ -75,11 +84,12 @@ public abstract class CargoTestBase extends JUnit4CacheTestCase {
   }
 
   /**
-   * Test that when a session attribute is set in one container, it
-   * is replicated to other containers
+   * Test that when a session attribute is set in one container, it is replicated to other
+   * containers
    */
   @Test
   public void containersShouldHavePersistentSessionData() throws IOException, URISyntaxException {
+    manager.setTestName("containersShouldHavePersistentSessionData");
     manager.startAllInactiveContainers();
 
     String key = "value_testSessionPersists";
@@ -99,12 +109,13 @@ public abstract class CargoTestBase extends JUnit4CacheTestCase {
   }
 
   /**
-   * Test that when a container fails, session attributes that were previously
-   * set in that container are still available in other containers
+   * Test that when a container fails, session attributes that were previously set in that container
+   * are still available in other containers
    */
   @Test
   public void failureShouldStillAllowOtherContainersDataAccess()
       throws IOException, URISyntaxException {
+    manager.setTestName("failureShouldStillAllowOtherContainersDataAccess");
     manager.startAllInactiveContainers();
 
     String key = "value_testSessionPersists";
@@ -126,12 +137,12 @@ public abstract class CargoTestBase extends JUnit4CacheTestCase {
   }
 
   /**
-   * Test that invalidating a session in one container invalidates
-   * the session in all containers.
+   * Test that invalidating a session in one container invalidates the session in all containers.
    */
   @Test
   public void invalidationShouldRemoveValueAccessForAllContainers()
       throws IOException, URISyntaxException {
+    manager.setTestName("invalidationShouldRemoveValueAccessForAllContainers");
     manager.startAllInactiveContainers();
 
     String key = "value_testInvalidate";
@@ -152,12 +163,13 @@ public abstract class CargoTestBase extends JUnit4CacheTestCase {
   }
 
   /**
-   * Test that  if a session is not used within the expiration time, it is
-   * expired and removed from all containers
+   * Test that if a session is not used within the expiration time, it is expired and removed from
+   * all containers
    */
   @Test
   public void containersShouldExpireInSetTimeframe()
       throws IOException, URISyntaxException, InterruptedException {
+    manager.setTestName("containersShouldExpireInSetTimeframe");
     manager.startAllInactiveContainers();
 
     String key = "value_testSessionExpiration";
@@ -189,12 +201,13 @@ public abstract class CargoTestBase extends JUnit4CacheTestCase {
 
 
   /**
-   * Test that if one container is accessing a session, that will
-   * prevent the session from expiring in all containers.
+   * Test that if one container is accessing a session, that will prevent the session from expiring
+   * in all containers.
    */
   @Test
   public void containersShouldShareSessionExpirationReset()
       throws URISyntaxException, IOException, InterruptedException {
+    manager.setTestName("containersShouldShareSessionExpirationReset");
     manager.startAllInactiveContainers();
 
     int timeToExp = 5;
@@ -226,11 +239,11 @@ public abstract class CargoTestBase extends JUnit4CacheTestCase {
   }
 
   /**
-   * Test that if a session attribute is removed in one container, it is
-   * removed from all containers
+   * Test that if a session attribute is removed in one container, it is removed from all containers
    */
   @Test
   public void containersShouldShareDataRemovals() throws IOException, URISyntaxException {
+    manager.setTestName("containersShouldShareDataRemovals");
     manager.startAllInactiveContainers();
 
     String key = "value_testSessionRemove";
@@ -264,6 +277,7 @@ public abstract class CargoTestBase extends JUnit4CacheTestCase {
 
   @Test
   public void newContainersShouldShareDataAccess() throws IOException, URISyntaxException {
+    manager.setTestName("newContainersShouldShareDataAccess");
     manager.startAllInactiveContainers();
 
     String key = "value_testSessionAdd";

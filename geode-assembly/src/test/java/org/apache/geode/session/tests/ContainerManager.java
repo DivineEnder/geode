@@ -14,6 +14,7 @@
  */
 package org.apache.geode.session.tests;
 
+import org.apache.commons.io.FileUtils;
 import org.apache.geode.internal.AvailablePortHelper;
 import org.codehaus.cargo.container.ContainerType;
 import org.codehaus.cargo.container.InstalledLocalContainer;
@@ -22,32 +23,40 @@ import org.codehaus.cargo.container.configuration.ConfigurationType;
 import org.codehaus.cargo.container.configuration.LocalConfiguration;
 import org.codehaus.cargo.container.deployable.WAR;
 import org.codehaus.cargo.container.property.GeneralPropertySet;
-import org.codehaus.cargo.container.property.LoggingLevel;
 import org.codehaus.cargo.container.property.ServletPropertySet;
 import org.codehaus.cargo.container.tomcat.TomcatPropertySet;
 import org.codehaus.cargo.generic.DefaultContainerFactory;
 import org.codehaus.cargo.generic.configuration.DefaultConfigurationFactory;
 
+import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 
 /**
  * Manages multiple J2EE containers using cargo.
  *
- * Provides methods to start and stop J2EE containers and obtain the http ports
- * those containers are listening on.
+ * Provides methods to start and stop J2EE containers and obtain the http ports those containers are
+ * listening on.
  */
 public class ContainerManager {
-  private static final String PLAIN_LOG_FILE = "/tmp/logs/container";
-
   private ArrayList<InstalledLocalContainer> containers;
   private ArrayList<ContainerInstall> installs;
+
+  private String testName;
 
   public ContainerManager() {
     containers = new ArrayList<>();
     installs = new ArrayList<>();
   }
 
+  /**
+   * Set the name of the current test
+   *
+   * Used for debugging so that log files can be easily identified
+   */
+  public void setTestName(String testName) {
+    this.testName = testName;
+  }
 
   /**
    * Add a new container to manage using the specified installation
@@ -70,15 +79,19 @@ public class ContainerManager {
 
   /**
    * Return the http port the given container is listening on, if the container is running
+   * 
    * @throws IllegalStateException if the container is not running.
    */
   public String getContainerPort(int index) {
-    LocalConfiguration config = getContainer(index).getConfiguration();
+    return getContainerPort(getContainer(index));
+  }
+
+  private String getContainerPort(InstalledLocalContainer container) {
+    LocalConfiguration config = container.getConfiguration();
     config.applyPortOffset();
 
-    if (!getContainer(index).getState().isStarted())
-    {
-      throw new IllegalStateException("Port has not yet been assigned to container " + index);
+    if (!container.getState().isStarted()) {
+      throw new IllegalStateException("Port has not yet been assigned to container");
     }
     return config.getPropertyValue(ServletPropertySet.PORT);
   }
@@ -149,32 +162,47 @@ public class ContainerManager {
    * Get a textual description of the given container.
    */
   public String getContainerDescription(int index) {
-    String port = "<not started>";
-    try
-    {
-      port = String.valueOf(getContainerPort(index));
-    } catch (IllegalStateException ise) {}
+    return getContainerDescription(getContainer(index), getContainerInstall(index)) + " (" + index
+        + ")";
+  }
 
-    return getContainerInstall(index).getContainerDescription() + "_" + index + ":" + port;
+  private String getContainerDescription(InstalledLocalContainer container,
+      ContainerInstall install) {
+    String port = "<" + container.getState().toString() + ">";
+    try {
+      port = String.valueOf(getContainerPort(container));
+    } catch (IllegalStateException ise) {
+    }
+
+    return install.getContainerDescription() + ":" + port;
   }
 
   /**
    * Start the given container
    */
-  public void startContainer(int index) {
+  public void startContainer(int index) throws IOException {
     InstalledLocalContainer container = getContainer(index);
+
+    String logFilePath = "/tmp/cargo_logs/" + getContainerInstall(index).getContainerDescription()
+        + "_" + testName + "_" + index + "." + System.nanoTime();
+    container.setOutput(logFilePath);
+    System.out.println("Sending log file output to " + logFilePath);
+
     if (!container.getState().isStarted()) {
+      System.out.println("Starting container " + getContainerDescription(index));
       int[] ports = AvailablePortHelper.getRandomAvailableTCPPorts(3);
       container.getConfiguration().setProperty(ServletPropertySet.PORT, Integer.toString(ports[0]));
-      container.getConfiguration().setProperty(GeneralPropertySet.RMI_PORT, Integer.toString(ports[1]));
-      container.getConfiguration().setProperty(TomcatPropertySet.AJP_PORT, Integer.toString(ports[2]));
+      container.getConfiguration().setProperty(GeneralPropertySet.RMI_PORT,
+          Integer.toString(ports[1]));
+      container.getConfiguration().setProperty(TomcatPropertySet.AJP_PORT,
+          Integer.toString(ports[2]));
       container.getConfiguration().setProperty(GeneralPropertySet.PORT_OFFSET, "0");
 
       container.start();
       System.out.println("Started container " + getContainerDescription(index));
     } else
-      throw new IllegalArgumentException("Cannot start container "
-          + getContainerDescription(index) + " it has currently " + container.getState());
+      throw new IllegalArgumentException("Cannot start container " + getContainerDescription(index)
+          + " it has currently " + container.getState());
   }
 
   /**
@@ -183,26 +211,17 @@ public class ContainerManager {
   public void stopContainer(int index) {
     InstalledLocalContainer container = getContainer(index);
     if (container.getState().isStarted()) {
+      System.out.println("Stopping container" + index + " " + getContainerDescription(index));
       container.stop();
       System.out.println("Stopped container" + index + " " + getContainerDescription(index));
     } else
-      throw new IllegalArgumentException("Cannot stop container "
-          + getContainerDescription(index) + " it is currently " + container.getState());
+      throw new IllegalArgumentException("Cannot stop container " + getContainerDescription(index)
+          + " it is currently " + container.getState());
   }
 
-  public void startContainers(int[] indexes) {
+  public void startContainers(ArrayList<Integer> indexes) throws IOException {
     for (int index : indexes)
       startContainer(index);
-  }
-
-  public void startContainers(ArrayList<Integer> indexes) {
-    for (int index : indexes)
-      startContainer(index);
-  }
-
-  public void stopContainers(int[] indexes) {
-    for (int index : indexes)
-      stopContainer(index);
   }
 
   public void stopContainers(ArrayList<Integer> indexes) {
@@ -213,7 +232,7 @@ public class ContainerManager {
   /**
    * Start all containers that are not currently running.
    */
-  public void startAllInactiveContainers() {
+  public void startAllInactiveContainers() throws IOException {
     startContainers(getInactiveContainerIndexes());
   }
 
@@ -231,6 +250,25 @@ public class ContainerManager {
   }
 
   /**
+   * Runs {@link #clean} on all containers
+   */
+  public void cleanUp() throws IOException {
+    for (int i = 0; i < numContainers(); i++)
+      clean(i);
+  }
+
+  /**
+   * Deletes the configuration directory for the specified container
+   */
+  private void clean(int index) throws IOException {
+    File file = new File(getContainerInstall(index).getContainerConfigHome() + "_" + index);
+    System.out.println("Deleting configuration folder for container " + index
+        + ", which is located at " + file.getAbsolutePath());
+    FileUtils.deleteDirectory(file);
+    System.out.println("Configuration folder was deleted: " + file.exists());
+  }
+
+  /**
    * Create a container to manage, given an installation.
    */
   private InstalledLocalContainer addContainer(ContainerInstall install, int index)
@@ -238,8 +276,8 @@ public class ContainerManager {
     // Create the Cargo Container instance wrapping our physical container
     LocalConfiguration configuration = (LocalConfiguration) new DefaultConfigurationFactory()
         .createConfiguration(install.getContainerId(), ContainerType.INSTALLED,
-            ConfigurationType.STANDALONE, "/tmp/cargo_configs/config" + index);
-    configuration.setProperty(GeneralPropertySet.LOGGING, LoggingLevel.HIGH.getLevel());
+            ConfigurationType.STANDALONE, install.getContainerConfigHome() + "_" + index);
+    configuration.setProperty(GeneralPropertySet.LOGGING, install.getLoggingLevel());
 
     install.modifyConfiguration(configuration);
 
@@ -257,9 +295,6 @@ public class ContainerManager {
         .createContainer(install.getContainerId(), ContainerType.INSTALLED, configuration);
 
     container.setHome(install.getInstallPath());
-    container.setOutput(PLAIN_LOG_FILE + containers.size() + ".log");
-    System.out.println("Sending log file output to " + PLAIN_LOG_FILE + containers.size() + ".log");
-
 
     containers.add(index, container);
     installs.add(index, install);

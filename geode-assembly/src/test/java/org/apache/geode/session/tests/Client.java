@@ -66,6 +66,7 @@ public class Client {
 
   /**
    * Change the server that the client is targeting.
+   * 
    * @param port the port that the server is listening on
    */
   public void setPort(int port) {
@@ -112,6 +113,7 @@ public class Client {
 
   /**
    * Remove the session attribute on the server
+   * 
    * @param key - the session attribute to remove
    */
   public Response remove(String key) throws IOException, URISyntaxException {
@@ -120,7 +122,9 @@ public class Client {
 
   /**
    * Remove the session attribute on the server
+   * 
    * @param key - the session attribute to remove
+   * @param storeRespCookie - whether or not to store the session cookie of this request
    */
   public Response remove(String key, boolean storeRespCookie)
       throws URISyntaxException, IOException {
@@ -152,8 +156,7 @@ public class Client {
   /**
    * Set the maximum inactive interval for this client's session on the server.
    *
-   * If this time interval elapses without activity on the session, the session
-   * will expire.
+   * If this time interval elapses without activity on the session, the session will expire.
    *
    * @param time - Time in seconds until the session should expire
    */
@@ -164,8 +167,7 @@ public class Client {
   /**
    * Set the maximum inactive interval for this client's session on the server.
    *
-   * If this time interval elapses without activity on the session, the session
-   * will expire.
+   * If this time interval elapses without activity on the session, the session will expire.
    *
    * @param time - Time in seconds until the session should expire
    */
@@ -184,10 +186,10 @@ public class Client {
   }
 
   /**
-   * Sends a request to the server and returns a custom response
-   * object with the result
-   * @param storeRespCookie if true, retain the value of a "Set-Cookie" header
-   * returned in the response.
+   * Sends a request to the server and returns a custom response object with the result
+   * 
+   * @param storeRespCookie if true, retain the value of a "Set-Cookie" header returned in the
+   *        response.
    */
   private Response doRequest(HttpGet req, boolean storeRespCookie) throws IOException {
     addCookieHeader(req);
@@ -214,7 +216,7 @@ public class Client {
   }
 
   private void addCookieHeader(HttpGet req) {
-    //Set the cookie header
+    // Set the cookie header
     if (cookie != null) {
       BasicClientCookie cookie = new BasicClientCookie("JSESSIONID", this.cookie);
       cookie.setDomain(req.getURI().getHost());
@@ -239,8 +241,7 @@ public class Client {
   /**
    * A response received from the server.
    *
-   * Currently contains the text value of the response body, as well
-   * as the session cookie.
+   * Currently contains the text value of the response body, as well as the session cookie.
    */
   public class Response {
     private final String sessionCookie;
@@ -269,8 +270,8 @@ public class Client {
     }
 
     /**
-     * @return true if this response contained a "Set-Cookie" header, indicating
-     * that the server is setting a new value for the session cookie.
+     * @return true if this response contained a "Set-Cookie" header, indicating that the server is
+     *         setting a new value for the session cookie.
      */
     public boolean isNew() {
       return isNew;

@@ -26,6 +26,11 @@ import org.junit.rules.TemporaryFolder;
 
 import java.io.File;
 
+/**
+ * Setup class for Tomcat Client Server tests
+ *
+ * Sets up the server needed for the client container to connect to
+ */
 public abstract class TomcatClientServerTest extends CargoTestBase {
 
   @Rule
@@ -41,6 +46,10 @@ public abstract class TomcatClientServerTest extends CargoTestBase {
   private String serverName;
   private File workingDirectory;
 
+  /**
+   * Starts a server for the client Tomcat container to connect to using the GFSH command line
+   * before each test
+   */
   @Before
   public void startServer() throws Exception {
     TomcatInstall install = (TomcatInstall) getInstall();

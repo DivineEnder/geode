@@ -17,6 +17,12 @@ package org.apache.geode.session.tests;
 import org.apache.geode.test.dunit.DUnitEnv;
 import org.junit.BeforeClass;
 
+/**
+ * Jetty 9 Client Server tests
+ *
+ * Runs all the tests in {@link CargoTestBase} on the Jetty 9 install, setup in the
+ * {@link #setupJettyInstall()} method before tests are run.
+ */
 public class Jetty9ClientServerTest extends GenericAppServerClientServerTest {
   private static ContainerInstall install;
 

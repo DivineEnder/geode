@@ -28,8 +28,20 @@ import java.util.HashMap;
 import java.util.Properties;
 import java.util.regex.Pattern;
 
+/**
+ * Tomcat specific container installation class
+ *
+ * Provides logic for installation and setup of the tomcat container, including editing the
+ * properties needed to switch between cache types.
+ */
 public class TomcatInstall extends ContainerInstall {
 
+  /**
+   * Version of tomcat that this class will install
+   *
+   * Includes the download URL for the each version, the version number associated with each
+   * version, and other properties or XML attributes needed to setup tomcat containers within Cargo
+   */
   public enum TomcatVersion {
     TOMCAT6(6,
         "http://archive.apache.org/dist/tomcat/tomcat-6/v6.0.37/bin/apache-tomcat-6.0.37.zip"),
@@ -56,6 +68,15 @@ public class TomcatInstall extends ContainerInstall {
       return version;
     }
 
+    /**
+     * Name of the property that can be set to speed up container startup
+     *
+     * Tomcat versions have different property names for the property that, when set, causes the
+     * container to skip over the specified jars when scanning jars on startup. Similar to
+     * {@link GenericAppServerInstall.Server} but specifically built for Tomcat installations.
+     * 
+     * @throws IllegalArgumentException if given a tomcat version is not expected
+     */
     public String jarSkipPropertyName() {
       switch (this) {
         case TOMCAT6:
@@ -70,6 +91,14 @@ public class TomcatInstall extends ContainerInstall {
       }
     }
 
+    /**
+     * XML required DeltaSessionManager attribute
+     *
+     * This XML attribute changes based on the Tomcat version.
+     * 
+     * @return HashMap whose key is the name of the attribute ('className') and value is the value
+     *         of the attribute.
+     */
     public HashMap<String, String> getRequiredXMLAttributes() {
       HashMap<String, String> attributes = new HashMap<>();
 
@@ -87,6 +116,12 @@ public class TomcatInstall extends ContainerInstall {
     }
   }
 
+  /**
+   * Tomcat cache type configuration for this installation
+   *
+   * Contains the XML needed for each cache type. Similar to
+   * {@link GenericAppServerInstall.CacheType} but specifically built for Tomcat installations.
+   */
   public enum TomcatConfig {
     PEER_TO_PEER("org.apache.geode.modules.session.catalina.PeerToPeerCacheLifecycleListener",
         "cache-peer.xml"),
@@ -101,14 +136,19 @@ public class TomcatInstall extends ContainerInstall {
       this.XMLFile = XMLFile;
     }
 
-    public String getXMLClassName() {
-      return XMLClassName;
-    }
-
+    /**
+     * Name of XML file associated with this type of cache
+     */
     public String getXMLFile() {
       return XMLFile;
     }
 
+    /**
+     * Required XML attribute associated with this type of cache
+     * 
+     * @return HashMap whose key is the name of the attribute ('className') and value is the value
+     *         of the attribute.
+     */
     public HashMap<String, String> getRequiredXMLAttributes() throws IOException {
       HashMap<String, String> attributes = new HashMap<>();
       attributes.put("className", XMLClassName);
@@ -152,7 +192,7 @@ public class TomcatInstall extends ContainerInstall {
     setCacheProperty("enableLocalCache", "false");
 
     // Install geode sessions into tomcat install
-    installGeodeSessions();
+    copyTomcatGeodeReqFiles(GEODE_BUILD_HOME + "/lib/");
 
     // Add the needed XML tags
     updateXMLFiles();
@@ -162,19 +202,17 @@ public class TomcatInstall extends ContainerInstall {
     }
   }
 
-  private void installGeodeSessions() throws IOException {
-    String extraJarsDir = GEODE_BUILD_HOME + "/lib/";
-
-    System.out.println("Found tomcat module " + tomcatModulePath);
-    System.out.println("Using extra jar directory " + extraJarsDir);
-
-    // Copy the required jar files to the tomcat install
-    copyTomcatGeodeReqFiles(getInstallPath() + "/lib/", extraJarsDir);
-  }
-
-  private void copyTomcatGeodeReqFiles(String tomcatLibPath, String extraJarsPath)
-      throws IOException {
+  /**
+   * Copies jars specified by {@link #tomcatRequiredJars} from the {@link #tomcatModulePath} and the
+   * specified other directory passed to the function.
+   * 
+   * @throws IOException if the {@link #tomcatModulePath}, installation lib directory, or extra
+   *         directory passed in contain no files.
+   */
+  private void copyTomcatGeodeReqFiles(String extraJarsPath) throws IOException {
     ArrayList<File> requiredFiles = new ArrayList<>();
+    // The library path for the current tomcat installation
+    String tomcatLibPath = getInstallPath() + "/lib/";
 
     // List of required jars and form version regexps from them
     String versionRegex = "-[0-9]+.*\\.jar";
@@ -235,6 +273,16 @@ public class TomcatInstall extends ContainerInstall {
     }
   }
 
+  /**
+   * Edits the specified property within the given property file
+   * 
+   * @param filePath path to the property file
+   * @param propertyName property name to edit
+   * @param propertyValue new property value
+   * @param append whether or not to append the given property value. If true appends the given
+   *        property value the current value. If false, replaces the current property value with the
+   *        given property value
+   */
   private void editPropertyFile(String filePath, String propertyName, String propertyValue,
       boolean append) throws Exception {
     FileInputStream input = new FileInputStream(filePath);
@@ -251,6 +299,9 @@ public class TomcatInstall extends ContainerInstall {
     properties.store(new FileOutputStream(filePath), null);
   }
 
+  /**
+   * Update the tomcat installation property file using {@link #editPropertyFile)}
+   */
   private void updateProperties() throws Exception {
     String jarsToSkip = "";
     for (String jarName : tomcatRequiredJars)
@@ -260,6 +311,11 @@ public class TomcatInstall extends ContainerInstall {
         jarsToSkip, true);
   }
 
+  /**
+   * Build a HashMap with server property attributes for the server.xml file
+   *
+   * Server properties are obtained by iterating through {@link ContainerInstall#systemProperties}
+   */
   private HashMap<String, String> buildServerXMLAttributes() throws IOException {
     HashMap<String, String> attributes = config.getRequiredXMLAttributes();
 
@@ -269,6 +325,11 @@ public class TomcatInstall extends ContainerInstall {
     return attributes;
   }
 
+  /**
+   * Build a HashMap with cache property attributes for the context.xml file
+   *
+   * Cache properties are obtained by iterating through {@link ContainerInstall#cacheProperties}
+   */
   private HashMap<String, String> buildContextXMLAttributes() {
     HashMap<String, String> attributes = version.getRequiredXMLAttributes();
 
@@ -278,6 +339,12 @@ public class TomcatInstall extends ContainerInstall {
     return attributes;
   }
 
+  /**
+   * Update the server and context XML files
+   *
+   * Uses the {@link #buildContextXMLAttributes()} and {@link #buildServerXMLAttributes()} methods
+   * to update to the proper attributes and values
+   */
   private void updateXMLFiles() throws Exception {
     editXMLFile(getInstallPath() + "/conf/server.xml", "Tomcat", "Listener", "Server",
         buildServerXMLAttributes());
@@ -285,6 +352,13 @@ public class TomcatInstall extends ContainerInstall {
         buildContextXMLAttributes());
   }
 
+  /**
+   * Sets the address and port of the locator for this tomcat installation
+   *
+   * For Client Server installations the cache-client.xml file is updated within the installations
+   * conf folder. For Peer to Peer installations the server.xml file is updated using
+   * {@link #updateXMLFiles()}.
+   */
   @Override
   public void setLocator(String address, int port) throws Exception {
     if (config == TomcatConfig.CLIENT_SERVER) {
@@ -305,16 +379,26 @@ public class TomcatInstall extends ContainerInstall {
     return version;
   }
 
+  /**
+   * @see ContainerInstall#getContainerId()
+   */
   @Override
   public String getContainerId() {
     return "tomcat" + version.toInteger() + "x";
   }
 
+  /**
+   * @see ContainerInstall#getContainerDescription()
+   */
   @Override
   public String getContainerDescription() {
     return version.name() + "_" + config.name();
   }
 
+  /**
+   * Modifies the tomcat configuration so that this points to the correct context.xml file when
+   * setup and run using Cargo.
+   */
   @Override
   public void modifyConfiguration(LocalConfiguration configuration) {
     // Copy context.xml file for actual server to get DeltaSessionManager as manager
