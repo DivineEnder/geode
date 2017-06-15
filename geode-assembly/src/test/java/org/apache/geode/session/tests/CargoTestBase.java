@@ -19,10 +19,11 @@ import static org.junit.Assert.assertEquals;
 import org.apache.geode.test.dunit.cache.internal.JUnit4CacheTestCase;
 import org.apache.geode.test.junit.categories.DistributedTest;
 import org.junit.After;
-import org.junit.AfterClass;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
+import org.junit.rules.TestName;
 
 import java.io.IOException;
 import java.net.URISyntaxException;
@@ -35,9 +36,11 @@ import java.net.URISyntaxException;
  */
 @Category(DistributedTest.class)
 public abstract class CargoTestBase extends JUnit4CacheTestCase {
+  @Rule
+  public TestName testName = new TestName();
 
   public transient Client client;
-  public static transient ContainerManager manager;
+  public transient ContainerManager manager;
 
   public abstract ContainerInstall getInstall();
 
@@ -47,18 +50,12 @@ public abstract class CargoTestBase extends JUnit4CacheTestCase {
     manager = new ContainerManager();
 
     manager.addContainers(2, getInstall());
+    manager.setTestName(testName.getMethodName());
   }
 
   @After
-  public void stop() {
+  public void stop() throws IOException {
     manager.stopAllActiveContainers();
-  }
-
-  /**
-   * Clean up container installations after class tests are done
-   */
-  @AfterClass
-  public static void clean() throws IOException {
     manager.cleanUp();
   }
 
@@ -68,7 +65,6 @@ public abstract class CargoTestBase extends JUnit4CacheTestCase {
    */
   @Test
   public void containersShouldReplicateCookies() throws IOException, URISyntaxException {
-    manager.setTestName("containersShouldReplicateCookies");
     manager.startAllInactiveContainers();
 
     client.setPort(Integer.parseInt(manager.getContainerPort(0)));
@@ -89,7 +85,6 @@ public abstract class CargoTestBase extends JUnit4CacheTestCase {
    */
   @Test
   public void containersShouldHavePersistentSessionData() throws IOException, URISyntaxException {
-    manager.setTestName("containersShouldHavePersistentSessionData");
     manager.startAllInactiveContainers();
 
     String key = "value_testSessionPersists";
@@ -115,7 +110,6 @@ public abstract class CargoTestBase extends JUnit4CacheTestCase {
   @Test
   public void failureShouldStillAllowOtherContainersDataAccess()
       throws IOException, URISyntaxException {
-    manager.setTestName("failureShouldStillAllowOtherContainersDataAccess");
     manager.startAllInactiveContainers();
 
     String key = "value_testSessionPersists";
@@ -142,7 +136,6 @@ public abstract class CargoTestBase extends JUnit4CacheTestCase {
   @Test
   public void invalidationShouldRemoveValueAccessForAllContainers()
       throws IOException, URISyntaxException {
-    manager.setTestName("invalidationShouldRemoveValueAccessForAllContainers");
     manager.startAllInactiveContainers();
 
     String key = "value_testInvalidate";
@@ -169,7 +162,6 @@ public abstract class CargoTestBase extends JUnit4CacheTestCase {
   @Test
   public void containersShouldExpireInSetTimeframe()
       throws IOException, URISyntaxException, InterruptedException {
-    manager.setTestName("containersShouldExpireInSetTimeframe");
     manager.startAllInactiveContainers();
 
     String key = "value_testSessionExpiration";
@@ -207,7 +199,6 @@ public abstract class CargoTestBase extends JUnit4CacheTestCase {
   @Test
   public void containersShouldShareSessionExpirationReset()
       throws URISyntaxException, IOException, InterruptedException {
-    manager.setTestName("containersShouldShareSessionExpirationReset");
     manager.startAllInactiveContainers();
 
     int timeToExp = 5;
@@ -243,7 +234,6 @@ public abstract class CargoTestBase extends JUnit4CacheTestCase {
    */
   @Test
   public void containersShouldShareDataRemovals() throws IOException, URISyntaxException {
-    manager.setTestName("containersShouldShareDataRemovals");
     manager.startAllInactiveContainers();
 
     String key = "value_testSessionRemove";
@@ -277,7 +267,6 @@ public abstract class CargoTestBase extends JUnit4CacheTestCase {
 
   @Test
   public void newContainersShouldShareDataAccess() throws IOException, URISyntaxException {
-    manager.setTestName("newContainersShouldShareDataAccess");
     manager.startAllInactiveContainers();
 
     String key = "value_testSessionAdd";

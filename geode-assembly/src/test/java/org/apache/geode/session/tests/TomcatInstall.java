@@ -33,6 +33,10 @@ import java.util.regex.Pattern;
  *
  * Provides logic for installation and setup of the tomcat container, including editing the
  * properties needed to switch between cache types.
+ *
+ * This makes the modifications to the tomcat install as described in <a href=
+ * "https://geode.apache.org/docs/guide/latest/tools_modules/http_session_mgmt/session_mgmt_tomcat.html">
+ * the geode docs</a>.
  */
 public class TomcatInstall extends ContainerInstall {
 

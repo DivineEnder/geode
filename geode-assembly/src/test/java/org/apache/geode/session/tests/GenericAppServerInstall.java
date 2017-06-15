@@ -15,6 +15,7 @@
 package org.apache.geode.session.tests;
 
 import org.codehaus.cargo.container.deployable.WAR;
+import org.junit.Assume;
 
 import java.io.File;
 import java.io.IOException;
@@ -27,6 +28,14 @@ import java.util.List;
  *
  * Extends {@link ContainerInstall} to form a basic installer which downloads and sets up a
  * container installation. Currently being used solely for Jetty 9 installation.
+ *
+ * This install modifies the session testing war using the modify_war_file script, so that it uses
+ * the geode session replication for generic application servers. That also means that tests using
+ * this install will only run on linux.
+ *
+ * In theory, adding support for additional containers should just be a matter of adding new
+ * elements to the {@link Server} enumeration, since this install does not modify the container in
+ * any way.
  */
 public class GenericAppServerInstall extends ContainerInstall {
 
@@ -106,6 +115,9 @@ public class GenericAppServerInstall extends ContainerInstall {
   public GenericAppServerInstall(Server server, CacheType cacheType, String installDir)
       throws IOException, InterruptedException {
     super(installDir, server.getDownloadURL());
+
+    // Ignore tests that are running on windows, since they can't run the modify war script
+    Assume.assumeFalse(System.getProperty("os.name").toLowerCase().contains("win"));
     this.server = server;
     this.cacheType = cacheType;
 
