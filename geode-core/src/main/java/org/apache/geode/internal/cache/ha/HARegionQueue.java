@@ -1527,6 +1527,7 @@ public class HARegionQueue implements RegionQueue {
    * @param sequenceId - the sequence id for this event
    */
   public void addDispatchedMessage(ThreadIdentifier tid, long sequenceId) {
+    logger.error("server ack addDispatchedMessage seqId:" + sequenceId);
     Long lastSequenceNumber = sequenceId;
     boolean wasEmpty = false;
     Long oldvalue = null;
@@ -2120,6 +2121,9 @@ public class HARegionQueue implements RegionQueue {
       }
     }
 
+    public static int totalTakeSideInc = 0;
+    public static int totalPutSideDec = 0;
+
     /**
      * Checks whether a put operation should block or proceed based on the capacity constraint of
      * the Queue. Initially it checks only via Put Side Put Permits. If it is exhausted it checks
@@ -2141,10 +2145,16 @@ public class HARegionQueue implements RegionQueue {
           throw new InterruptedException();
         synchronized (this.putGuard) {
           if (putPermits <= 0) {
+            logger.error("Made it past putPermits <= 0");
+            logger.error("takeSidePutPermits: " + takeSidePutPermits);
             synchronized (this.permitMon) {
               if (reconcilePutPermits() <= 0) {
+                logger.error("Made it past if for reconcilePutPermits, take permits = "
+                    + takeSidePutPermits);
+
                 if (region.getSystem().getConfig().getRemoveUnresponsiveClient()) {
                   isClientSlowReciever = true;
+                  logger.error("Client slow, did not sleep but did hit max");
                 } else {
                   try {
                     long logFrequency = CacheClientNotifier.DEFAULT_LOG_FREQUENCY;
@@ -2161,6 +2171,8 @@ public class HARegionQueue implements RegionQueue {
                     ++this.maxQueueSizeHitCount;
                     this.region.checkReadiness(); // fix for bug 37581
                     // TODO: wait called while holding two locks
+                    logger.error("maxHitCount: " + maxQueueSizeHitCount + ", take permits: "
+                        + takeSidePutPermits);
                     this.permitMon.wait(CacheClientNotifier.eventEnqueueWaitTime);
                     this.region.checkReadiness(); // fix for bug 37581
                     // Fix for #51400. Allow the queue to grow beyond its
@@ -2181,7 +2193,9 @@ public class HARegionQueue implements RegionQueue {
               }
             } // synchronized (this.permitMon)
           } // if (putPermits <= 0)
-          --putPermits;
+          else
+            --putPermits;
+          totalPutSideDec++;
         } // synchronized (this.putGuard)
       }
     }
@@ -2192,6 +2206,8 @@ public class HARegionQueue implements RegionQueue {
      * @return int current Put permits
      */
     private int reconcilePutPermits() {
+      logger.error("Reconciling put permits (" + putPermits + ") with take side permits ("
+          + takeSidePutPermits + ")");
       putPermits += takeSidePutPermits;
       takeSidePutPermits = 0;
       return putPermits;
@@ -2222,9 +2238,15 @@ public class HARegionQueue implements RegionQueue {
       if (this.haContainer instanceof HAContainerMap && isPrimary()) { // Fix for bug 39413
         synchronized (this.permitMon) {
           ++this.takeSidePutPermits;
+          totalTakeSideInc++;
+          logger.error("incrementTakeSidePutPermits func: " + takeSidePutPermits + ", Put permits: "
+              + putPermits);
           this.permitMon.notifyAll();
         }
       }
+
+      // logger.error("total take inc: " + totalTakeSideInc);
+      // logger.error("total put dec: " + totalPutSideDec);
     }
 
     /**
@@ -3705,6 +3727,11 @@ public class HARegionQueue implements RegionQueue {
       } catch (RegionDestroyedException ignore) {
       }
     }
+  }
+
+  public static void doPrint() {
+    // logger.error("total put decs: " + BlockingHARegionQueue.totalPutSideDec);
+    // logger.error("total take incs: " + BlockingHARegionQueue.totalTakeSideInc);
   }
 
   /**

@@ -30,6 +30,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
@@ -1586,6 +1587,8 @@ public class CacheClientProxy implements ClientSession {
    * @param conflatable
    */
   protected void deliverMessage(Conflatable conflatable) {
+    long startTime = System.currentTimeMillis();
+    logger.error("CacheClientProxy.deliverMessage conflatable: " + conflatable);
     ThreadState state = this.securityService.bindSubject(this.subject);
     ClientUpdateMessage clientMessage = null;
     if (conflatable instanceof HAEventWrapper) {
@@ -1637,6 +1640,13 @@ public class CacheClientProxy implements ClientSession {
 
     if (state != null)
       state.clear();
+
+    long totalTime = System.currentTimeMillis() - startTime;
+    long mins = TimeUnit.MILLISECONDS.toMinutes(totalTime);
+    long seconds = TimeUnit.MILLISECONDS.toSeconds(totalTime) - TimeUnit.MINUTES.toSeconds(mins);
+    long milliseconds = totalTime - TimeUnit.SECONDS.toMillis(seconds);
+    logger.error(String.format("CacheClientProxy.deliverMessage timing: %d min, %d s, %d ms", mins,
+        seconds, milliseconds));
   }
 
   protected void sendMessageDirectly(ClientMessage message) {
@@ -2748,7 +2758,11 @@ public class CacheClientProxy implements ClientSession {
      * @throws IOException
      */
     protected boolean dispatchMessage(ClientMessage clientMessage) throws IOException {
+      // logger.error("Dispatching {}", clientMessage);
+
       boolean isDispatched = false;
+      // logger.trace(LogMarker.BRIDGE_SERVER, "Dispatching {}", clientMessage);
+
       if (logger.isTraceEnabled(LogMarker.BRIDGE_SERVER)) {
         logger.trace(LogMarker.BRIDGE_SERVER, "Dispatching {}", clientMessage);
       }
@@ -2824,6 +2838,7 @@ public class CacheClientProxy implements ClientSession {
       if (isDispatched) {
         this._messageQueue.getStatistics().incEventsDispatched();
       }
+
       return isDispatched;
     }
 
