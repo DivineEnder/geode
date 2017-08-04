@@ -14,6 +14,31 @@
  */
 package org.apache.geode.modules.session.catalina;
 
+import java.io.DataInput;
+import java.io.DataOutput;
+import java.io.IOException;
+import java.io.InputStream;
+import java.security.AccessController;
+import java.security.Principal;
+import java.security.PrivilegedAction;
+import java.util.ArrayList;
+import java.util.Enumeration;
+import java.util.Hashtable;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+
+import javax.servlet.http.HttpSession;
+
+import org.apache.catalina.Manager;
+import org.apache.catalina.ha.session.SerializablePrincipal;
+import org.apache.catalina.realm.GenericPrincipal;
+import org.apache.catalina.security.SecurityUtil;
+import org.apache.catalina.session.StandardSession;
+import org.apache.juli.logging.Log;
+import org.apache.juli.logging.LogFactory;
+
 import org.apache.geode.DataSerializable;
 import org.apache.geode.DataSerializer;
 import org.apache.geode.Delta;
@@ -27,30 +52,6 @@ import org.apache.geode.modules.session.catalina.internal.DeltaSessionAttributeE
 import org.apache.geode.modules.session.catalina.internal.DeltaSessionAttributeEventBatch;
 import org.apache.geode.modules.session.catalina.internal.DeltaSessionDestroyAttributeEvent;
 import org.apache.geode.modules.session.catalina.internal.DeltaSessionUpdateAttributeEvent;
-import org.apache.catalina.Manager;
-import org.apache.catalina.ha.session.SerializablePrincipal;
-import org.apache.catalina.realm.GenericPrincipal;
-import org.apache.catalina.security.SecurityUtil;
-import org.apache.catalina.session.StandardSession;
-import org.apache.juli.logging.Log;
-import org.apache.juli.logging.LogFactory;
-
-import javax.servlet.http.HttpSession;
-import java.io.DataInput;
-import java.io.DataOutput;
-import java.io.IOException;
-import java.io.InputStream;
-import java.lang.reflect.Field;
-import java.security.AccessController;
-import java.security.Principal;
-import java.security.PrivilegedAction;
-import java.util.ArrayList;
-import java.util.Enumeration;
-import java.util.Hashtable;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 
 @SuppressWarnings("serial")
 public class DeltaSession extends StandardSession
@@ -532,11 +533,6 @@ public class DeltaSession extends StandardSession
     this.maxInactiveInterval = in.readInt();
     this.isNew = in.readBoolean();
     this.isValid = in.readBoolean();
-    try {
-      Field field = this.getClass().getDeclaredField("attributes");
-    } catch (NoSuchFieldException e) {
-      e.printStackTrace();
-    }
     this.attributes = readInAttributes(in);
     this.serializedPrincipal = DataSerializer.readByteArray(in);
 

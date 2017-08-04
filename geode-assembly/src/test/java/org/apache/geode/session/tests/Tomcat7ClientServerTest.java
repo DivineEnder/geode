@@ -14,8 +14,6 @@
  */
 package org.apache.geode.session.tests;
 
-import java.awt.Container;
-
 import org.junit.BeforeClass;
 
 import org.apache.geode.test.dunit.DUnitEnv;

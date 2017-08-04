@@ -14,7 +14,6 @@
  */
 package org.apache.geode.session.tests;
 
-import java.awt.Container;
 import java.io.File;
 import java.io.IOException;
 

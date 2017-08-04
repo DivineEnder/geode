@@ -14,11 +14,12 @@
  */
 package org.apache.geode.session.tests;
 
+import org.junit.Before;
+
 import org.apache.geode.cache.Cache;
 import org.apache.geode.cache.server.CacheServer;
 import org.apache.geode.test.dunit.Host;
 import org.apache.geode.test.dunit.VM;
-import org.junit.Before;
 
 /**
  * Extends the {@link CargoTestBase} class to support client server tests of generic app servers

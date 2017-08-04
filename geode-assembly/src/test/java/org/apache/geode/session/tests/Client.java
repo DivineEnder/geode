@@ -14,8 +14,9 @@
  */
 package org.apache.geode.session.tests;
 
-import org.apache.geode.modules.session.CommandServlet;
-import org.apache.geode.modules.session.QueryCommand;
+import java.io.IOException;
+import java.net.URISyntaxException;
+
 import org.apache.http.Header;
 import org.apache.http.StatusLine;
 import org.apache.http.client.methods.CloseableHttpResponse;
@@ -30,8 +31,8 @@ import org.apache.http.protocol.BasicHttpContext;
 import org.apache.http.protocol.HttpContext;
 import org.apache.http.util.EntityUtils;
 
-import java.io.IOException;
-import java.net.URISyntaxException;
+import org.apache.geode.modules.session.CommandServlet;
+import org.apache.geode.modules.session.QueryCommand;
 
 /**
  * A simple http client that talks to a server running the session-testing-war.
