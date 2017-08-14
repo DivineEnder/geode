@@ -106,11 +106,11 @@ public abstract class ContainerInstall {
    *
    * @param connType Enum representing the connection type of this installation (either client
    *        server or peer to peer)
-   * @param moduleName The module name of the installation being setup (i.e. tomcat, appserver,
+   * @param module The module name of the installation being setup (i.e. tomcat, appserver,
    *        etc.)
    */
   public ContainerInstall(String installDir, String downloadURL, ConnectionType connType,
-      String moduleName) throws IOException {
+      String module) throws IOException {
     this.connType = connType;
 
     // Removes previous run stuff (modules, installs, etc.)
@@ -125,8 +125,8 @@ public abstract class ContainerInstall {
     // Set install home
     INSTALL_PATH = installer.getHome();
     // Find and extract the module path
-    MODULE_PATH = findAndExtractModule(moduleName);
-    logger.info("Extracted module " + moduleName + " to " + MODULE_PATH);
+    MODULE_PATH = findAndExtractModule(module);
+    logger.info("Extracted module to " + MODULE_PATH);
     // Find the session testing war path
     WAR_FILE_PATH = findSessionTestingWar();
 
@@ -299,52 +299,59 @@ public abstract class ContainerInstall {
   /**
    * Finds and extracts the geode module associated with the specified module.
    *
-   * @param moduleName The module name (i.e. tomcat, appserver, etc.) of the module that should be
-   *        extract. Used as a search parameter to find the module archive.
+   * @param module The module name (i.e. tomcat, appserver, etc.) of the module that should be extract. Used as a search parameter to find the module archive. This can also be a directory in which the module is already located.
    * @return The path to the non-archive (extracted) version of the module files
    * @throws IOException
    */
-  protected static String findAndExtractModule(String moduleName) throws IOException {
-    File modulePath = null;
-    File modulesDir = new File(DEFAULT_MODULE_LOCATION);
+  protected static String findAndExtractModule(String module) throws IOException {
+    File modulesExtractedDir = null;
+    File modulesDir = new File(module);
 
-    boolean archive = false;
-    logger.info("Trying to access build dir " + modulesDir);
+    if (!modulesDir.exists()) {
+      modulesDir = new File(DEFAULT_MODULE_LOCATION);
 
-    // Search directory for tomcat module folder/zip
-    for (File file : modulesDir.listFiles()) {
+      logger.info("Trying to find module " + module);
 
-      if (file.getName().toLowerCase().contains(moduleName)) {
-        modulePath = file;
+      // Search directory for tomcat module folder/zip
+      for (File file : modulesDir.listFiles()) {
 
-        archive = !file.isDirectory();
-        if (!archive)
-          break;
+        if (file.getName().toLowerCase().contains(module)) {
+          modulesExtractedDir = file;
+
+          if (file.isDirectory())
+            break;
+        }
       }
     }
 
     // Unzip if it is a zip file
-    if (archive) {
-      if (!FilenameUtils.getExtension(modulePath.getAbsolutePath()).equals("zip")) {
-        throw new IOException("Bad module archive " + modulePath);
+    if (!modulesDir.isDirectory()) {
+      if (!FilenameUtils.getExtension(modulesExtractedDir.getAbsolutePath()).equals("zip")) {
+        throw new IOException("Bad module archive " + modulesExtractedDir);
       }
+
+      logger.info("Trying to unzip the modules directory " + modulesDir.getAbsolutePath());
 
       // Get the name of the new module folder within the extraction directory
       File newModuleFolder = new File(DEFAULT_MODULE_EXTRACTION_DIR
-          + modulePath.getName().substring(0, modulePath.getName().length() - 4));
+          + modulesExtractedDir.getName().substring(0, modulesExtractedDir.getName().length() - 4));
 
       // Extract folder to location if not already there
       if (!newModuleFolder.exists()) {
-        ZipUtils.unzip(modulePath.getAbsolutePath(), newModuleFolder.getAbsolutePath());
+        ZipUtils.unzip(modulesExtractedDir.getAbsolutePath(), newModuleFolder.getAbsolutePath());
       }
 
-      modulePath = newModuleFolder;
+      logger.info("Module directory unzipped into " + newModuleFolder.getAbsolutePath());
+      modulesExtractedDir = newModuleFolder;
+    }
+    else {
+      modulesExtractedDir = modulesDir;
     }
 
     // No module found within directory throw IOException
-    if (modulePath == null)
+    if (modulesExtractedDir == null)
       throw new IOException("No module found in " + modulesDir);
-    return modulePath.getAbsolutePath();
+    return modulesExtractedDir.getAbsolutePath();
   }
 
   /**

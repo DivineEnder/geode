@@ -42,7 +42,7 @@ public class TomcatInstall extends ContainerInstall {
     TOMCAT6(6,
         "http://archive.apache.org/dist/tomcat/tomcat-6/v6.0.37/bin/apache-tomcat-6.0.37.zip"),
     TOMCAT7(7,
-        "http://archive.apache.org/dist/tomcat/tomcat-7/v7.0.79/bin/apache-tomcat-7.0.79.zip"),
+        "http://archive.apache.org/dist/tomcat/tomcat-7/v7.0.73/bin/apache-tomcat-7.0.73.zip"),
     TOMCAT755(7,
         "http://archive.apache.org/dist/tomcat/tomcat-7/v7.0.55/bin/apache-tomcat-7.0.55.zip"),
     TOMCAT779(7,
@@ -78,17 +78,6 @@ public class TomcatInstall extends ContainerInstall {
         default:
           return getVersion();
       }
-//      switch (this) {
-//        case TOMCAT6:
-//        case TOMCAT755:
-//        case TOMCAT779:
-//        case TOMCAT8:
-//          return getVersion();
-//        case TOMCAT9:
-//          return 8;
-//        default:
-//          throw new IllegalArgumentException("Illegal tomcat version option");
-//      }
     }
 
     public int getVersion() {
@@ -151,18 +140,18 @@ public class TomcatInstall extends ContainerInstall {
    * skipping properties needed to speedup container startup.
    */
   public TomcatInstall(TomcatVersion version, ConnectionType connType, String installDir,
-      String moduleJarDir, String extraJarsPath) throws Exception {
+      String module, String extraJarsPath) throws Exception {
     // Does download and install from URL
-    super(installDir, version.getDownloadURL(), connType, "tomcat");
+    super(installDir, version.getDownloadURL(), connType, module);
 
     this.version = version;
-    if (moduleJarDir == null)
-      moduleJarDir = getModulePath() + "/lib/";
+    if (module == null)
+      module = getModulePath() + "/lib/";
     if (extraJarsPath == null)
       extraJarsPath = GEODE_BUILD_HOME + "/lib/";
 
     // Install geode sessions into tomcat install
-    copyTomcatGeodeReqFiles(moduleJarDir, extraJarsPath);
+    copyTomcatGeodeReqFiles(module, extraJarsPath);
     // Set some default XML attributes in server and cache XMLs
     setupDefaultSettings();
 

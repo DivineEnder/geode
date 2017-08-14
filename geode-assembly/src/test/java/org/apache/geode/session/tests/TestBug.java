@@ -64,6 +64,21 @@ public class TestBug {
   public transient Client client;
   public transient ContainerManager manager;
 
+  // Tomcat 7.0.55
+  TomcatInstall tomcat755 = new TomcatInstall(TomcatInstall.TomcatVersion.TOMCAT755,
+      ContainerInstall.ConnectionType.CLIENT_SERVER,
+      ContainerInstall.DEFAULT_INSTALL_DIR + "Tomcat755Server",
+      client81Gemfire.getAbsolutePath() + "/lib",
+      client81GemfireModules.getAbsolutePath() + "/lib");
+  // Tomcat 7.0.79
+  TomcatInstall tomcat779 = new TomcatInstall(TomcatInstall.TomcatVersion.TOMCAT779,
+      ContainerInstall.ConnectionType.CLIENT_SERVER,
+      ContainerInstall.DEFAULT_INSTALL_DIR + "Tomcat779Server",
+      server82Gemfire.getAbsolutePath() + "/lib",
+      server82GemfireModules.getAbsolutePath() + "/lib");
+
+  public TestBug() throws Exception {}
+
   protected void startServer(String name, String GFSHLocation, String classPath, int locatorPort)
       throws Exception {
     CommandStringBuilder command = new CommandStringBuilder(CliStrings.START_SERVER);
@@ -106,18 +121,6 @@ public class TestBug {
     // Set gemfire property to stop GFSH error message
     System.setProperty("GEMFIRE", server82Gemfire.getAbsolutePath());
 
-    TomcatInstall tomcat755 = new TomcatInstall(TomcatInstall.TomcatVersion.TOMCAT755,
-        ContainerInstall.ConnectionType.CLIENT_SERVER,
-        ContainerInstall.DEFAULT_INSTALL_DIR + "Tomcat755Server",
-        client81Gemfire.getAbsolutePath() + "/lib",
-        client81GemfireModules.getAbsolutePath() + "/lib");
-
-    TomcatInstall tomcat779 = new TomcatInstall(TomcatInstall.TomcatVersion.TOMCAT779,
-        ContainerInstall.ConnectionType.CLIENT_SERVER,
-        ContainerInstall.DEFAULT_INSTALL_DIR + "Tomcat779Server",
-        server82Gemfire.getAbsolutePath() + "/lib",
-        server82GemfireModules.getAbsolutePath() + "/lib");
-
     String classPathTomcat779 = tomcat779.getHome() + "/lib/*" + File.pathSeparator + tomcat779.getHome() + "/bin/*";
     // Get available port for the locator
     int locatorPort = AvailablePortHelper.getRandomAvailableTCPPort();
@@ -132,7 +135,7 @@ public class TestBug {
 
     manager.setTestName(testName.getMethodName());
     manager.addContainer(tomcat755);
-//    manager.addContainer(tomcat779);
+    manager.addContainer(tomcat779);
   }
 
   /**
@@ -151,7 +154,7 @@ public class TestBug {
   }
 
   @Test
-  public void checkContainer1GetsPutFromContainer0() throws IOException, URISyntaxException {
+  public void checkContainersReplicateContainer0Puts() throws IOException, URISyntaxException {
     // This has to happen at the start of every test
     manager.startAllInactiveContainers();
 
@@ -172,7 +175,7 @@ public class TestBug {
   }
 
   @Test
-  public void checkContainer0GetsPutFromContainer1() throws IOException, URISyntaxException {
+  public void checkContainersReplicateContainer1Puts() throws IOException, URISyntaxException {
     // This has to happen at the start of every test
     manager.startAllInactiveContainers();
 
